@@ -1,0 +1,52 @@
+name: Manual Node Extraction
+
+on:
+  workflow_dispatch:
+    inputs:
+      resumeUrl:
+        description: 'Webhook URL to send the JSON file'
+        required: true
+        type: string
+      package_name:
+        description: 'n8n package name to extract'
+        required: true
+        type: string
+
+jobs:
+  extract-and-send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build project
+        run: pnpm run build
+
+      - name: Run extractor
+        run: pnpm run start "${{ github.event.inputs.package_name }}"
+
+      - name: Find generated JSON file
+        id: find_json
+        run: |
+          FILE=$(ls -1 *.json | grep -v '^package.json$' | head -n 1)
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+
+      - name: Send JSON to webhook
+        if: steps.find_json.outputs.file != ''
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            --data-binary "@${{ steps.find_json.outputs.file }}" \
+            "${{ github.event.inputs.resumeUrl }}"
