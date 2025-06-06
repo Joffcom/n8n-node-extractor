@@ -1,0 +1,37 @@
+{
+  "name": "n8n-node-extractor",
+  "version": "1.0.0",
+  "description": "Tool to extract node metadata from n8n packages without installing them",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint --ext .ts src/"
+  },
+  "keywords": [
+    "n8n",
+    "community",
+    "nodes",
+    "extractor"
+  ],
+  "author": "Jonathan <jonathan@joffcom.net>",
+  "license": "MIT",
+  "dependencies": {
+    "tar": "^7.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "@types/tar": "^6.1.13",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "packageManager": "pnpm@10.6.3+sha512.bb45e34d50a9a76e858a95837301bfb6bd6d35aea2c5d52094fa497a467c43f5c440103ce2511e9e0a2f89c3d6071baac3358fc68ac6fb75e2ceb3d2736065e6"
+}
