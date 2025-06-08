@@ -5,6 +5,20 @@ import { CompleteNodeDescription, ExtractorConfig } from '../types/node-descript
 import { downloadAndExtractPackage } from '../utils/download-utils';
 import { getDeclaredNodes, setupN8nDependencies } from '../utils/npm-utils';
 
+// Type definitions for better type safety
+interface NodeModule {
+  default?: any;
+  [key: string]: any;
+}
+
+interface NodeInstance {
+  description: Partial<CompleteNodeDescription>;
+  methods?: {
+    loadOptions?: Record<string, Function>;
+    [key: string]: any;
+  };
+}
+
 export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
   private packagePath: string = '';
 
@@ -15,7 +29,7 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
   /**
    * Extract complete node descriptions from a community package
    */
-  async extract(packageName: string): Promise<CompleteNodeDescription[]> {
+  async extractInternal(packageName: string): Promise<CompleteNodeDescription[]> {
     console.log(`📦 Extracting node descriptions from: ${packageName}`);
 
     try {
@@ -47,15 +61,14 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
    * Find nodes in the package
    */
   private async findNodes(packageName: string): Promise<CompleteNodeDescription[]> {
-    const nodes: CompleteNodeDescription[] = [];
-
     // Get declared nodes from package.json
     const declaredNodes = await getDeclaredNodes(this.packagePath);
 
-    for (const nodePath of declaredNodes) {
+    // Process nodes in parallel using Promise.all
+    const nodePromises = declaredNodes.map(async nodePath => {
       console.log(`🔍 Processing: ${nodePath}`);
 
-      // Try exact path and variations
+      // Generate path variations
       const variations = [
         nodePath,
         nodePath.replace('.ts', '.js'),
@@ -63,26 +76,37 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
         nodePath.replace('src/', 'lib/'),
       ];
 
-      let found = false;
-      for (const variation of variations) {
-        const fullPath = path.resolve(this.packagePath, variation);
-        try {
-          await fs.access(fullPath);
-          const node = await this.extractCompleteNode(fullPath, packageName);
-          if (node) {
-            nodes.push(node);
-            found = true;
-            break;
+      // Check all variations in parallel
+      const checkResults = await Promise.all(
+        variations.map(async variation => {
+          const fullPath = path.resolve(this.packagePath, variation);
+          try {
+            await fs.access(fullPath);
+            return { exists: true, path: fullPath };
+          } catch {
+            return { exists: false, path: fullPath };
           }
-        } catch {
-          // File doesn't exist
+        })
+      );
+
+      // Find the first valid path
+      const validPath = checkResults.find(result => result.exists);
+
+      if (validPath) {
+        const node = await this.extractCompleteNode(validPath.path, packageName);
+        if (node) {
+          return node;
         }
       }
 
-      if (!found) {
-        console.warn(`❌ Could not extract: ${nodePath}`);
-      }
-    }
+      console.warn(`❌ Could not extract: ${nodePath}`);
+      return null;
+    });
+
+    // Filter out null results
+    const nodes = (await Promise.all(nodePromises)).filter(
+      node => node !== null
+    ) as CompleteNodeDescription[];
 
     return nodes;
   }
@@ -106,29 +130,14 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
       }
 
       try {
-        // Clear cache and require
-        const resolvedPath = require.resolve(filePath);
-        delete require.cache[resolvedPath];
+        // Load the module with timeout safety
+        const nodeModule = await this.loadNodeModule(filePath);
 
-        const nodeModule = require(filePath);
-
-        // Get the class - try different export patterns
-        let NodeClass = null;
-
-        if (nodeModule.default && typeof nodeModule.default === 'function') {
-          NodeClass = nodeModule.default;
-        } else {
-          // Try any function export
-          for (const [key, value] of Object.entries(nodeModule)) {
-            if (typeof value === 'function' && key !== 'default') {
-              NodeClass = value as any;
-              break;
-            }
-          }
-        }
+        // Use the extracted method to get the node class
+        const NodeClass = this.resolveNodeClass(nodeModule);
 
         if (!NodeClass || typeof NodeClass !== 'function') {
-          this.log(`❌ No valid NodeClass found`);
+          this.log(`❌ No valid NodeClass found in ${path.basename(filePath)}`);
           return null;
         }
 
@@ -137,7 +146,7 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
         const description = nodeInstance.description;
 
         if (!description || !description.name) {
-          this.log(`❌ No valid description`);
+          this.log(`❌ No valid description in ${path.basename(filePath)}`);
           return null;
         }
 
@@ -156,35 +165,29 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
           outputs: description.outputs || ['main'],
           properties: description.properties || [],
         };
-        // Add load options methods
+
+        // Add load options methods if available
         if (nodeInstance.methods?.loadOptions) {
           completeDescription.__loadOptionsMethods = Object.keys(nodeInstance.methods.loadOptions);
         }
 
-        // Handle icon path - generate proper iconUrl
-        if (description.icon) {
-          // Only Font Awesome icons stay as 'icon'
-          if (description.icon.startsWith('fa:')) {
-            completeDescription.icon = description.icon;
-          } else {
-            // All other icons (including file: references) become iconUrl
-            const iconPath = description.icon.startsWith('file:')
-              ? description.icon.replace('file:', '')
-              : description.icon;
+        // Process icons using the extracted method
+        const iconInfo = this.processNodeIcons(description, packageName, filePath);
 
-            completeDescription.iconUrl = this.generateIconUrl(iconPath, packageName, filePath);
-            // Remove the original icon field since we're using iconUrl
-            delete completeDescription.icon;
+        if (iconInfo.icon) {
+          completeDescription.icon = iconInfo.icon;
+          // If we're using a Font Awesome icon, remove any iconUrl
+          if (iconInfo.icon.startsWith('fa:')) {
+            delete completeDescription.iconUrl;
           }
         }
 
-        // If there's already an iconUrl, update it
-        if (description.iconUrl) {
-          completeDescription.iconUrl = this.generateIconUrl(
-            description.iconUrl,
-            packageName,
-            filePath
-          );
+        if (iconInfo.iconUrl) {
+          completeDescription.iconUrl = iconInfo.iconUrl;
+          // If we're using iconUrl, remove any non-FA icon
+          if (!completeDescription.icon?.startsWith('fa:')) {
+            delete completeDescription.icon;
+          }
         }
 
         return completeDescription;
@@ -193,7 +196,9 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
         module.paths.splice(0, module.paths.length, ...originalPaths);
       }
     } catch (error) {
-      console.log(`❌ Extraction error:`, error);
+      this.log(
+        `❌ Extraction error for ${path.basename(filePath)}: ${error instanceof Error ? error.message : String(error)}`
+      );
       return null;
     }
   }
@@ -227,6 +232,47 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
     });
   }
 
+  private resolveNodeClass(nodeModule: any): any {
+    if (nodeModule.default && typeof nodeModule.default === 'function') {
+      return nodeModule.default;
+    }
+
+    // Try any function export
+    for (const [key, value] of Object.entries(nodeModule)) {
+      if (typeof value === 'function' && key !== 'default') {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  private processNodeIcons(
+    description: any,
+    packageName: string,
+    filePath: string
+  ): { icon?: string; iconUrl?: string } {
+    const result: { icon?: string; iconUrl?: string } = {};
+
+    if (description.icon) {
+      if (description.icon.startsWith('fa:')) {
+        result.icon = description.icon;
+      } else {
+        const iconPath = description.icon.startsWith('file:')
+          ? description.icon.replace('file:', '')
+          : description.icon;
+
+        result.iconUrl = this.generateIconUrl(iconPath, packageName, filePath);
+      }
+    }
+
+    if (description.iconUrl) {
+      result.iconUrl = this.generateIconUrl(description.iconUrl, packageName, filePath);
+    }
+
+    return result;
+  }
+
   private generateNodeName(originalName: string, packageName: string): string {
     const cleanPackageName = packageName.replace(/^@[^/]+\//, '').replace(/^n8n-nodes-/, '');
     return `n8n-nodes-${cleanPackageName}.${originalName}`;
@@ -234,23 +280,42 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
 
   private generateIconUrl(iconPath: string, packageName: string, nodePath: string): string {
     const cleanPackageName = packageName.replace(/^@[^/]+\//, '');
+    const nodeDir = path.dirname(nodePath);
 
-    let resolvedIconPath = iconPath;
+    // Resolve path based on different patterns
+    let resolvedPath = iconPath;
 
-    if (iconPath.startsWith('./') || iconPath.startsWith('../')) {
-      const nodeDir = path.dirname(nodePath);
-      const absoluteIconPath = path.resolve(nodeDir, iconPath);
-      resolvedIconPath = path.relative(this.packagePath, absoluteIconPath).replace(/\\/g, '/');
-    } else if (iconPath.startsWith('/')) {
-      resolvedIconPath = iconPath.substring(1);
-    } else if (!iconPath.includes('/')) {
-      const nodeDir = path.dirname(nodePath);
-      const absoluteIconPath = path.resolve(nodeDir, iconPath);
-      resolvedIconPath = path.relative(this.packagePath, absoluteIconPath).replace(/\\/g, '/');
-    } else {
-      resolvedIconPath = iconPath;
+    if (iconPath.startsWith('/')) {
+      // Absolute path within package
+      resolvedPath = iconPath.substring(1);
+    } else if (!iconPath.includes('/') || iconPath.startsWith('./') || iconPath.startsWith('../')) {
+      // Relative path or just filename
+      const absolutePath = path.resolve(nodeDir, iconPath);
+      resolvedPath = path.relative(this.packagePath, absolutePath).replace(/\\/g, '/');
     }
 
-    return `icons/${cleanPackageName}/${resolvedIconPath}`;
+    return `icons/${cleanPackageName}/${resolvedPath}`;
+  }
+
+  /**
+   * Safely load a node module with timeout
+   */
+  private async loadNodeModule(filePath: string, timeoutMs: number = 10000): Promise<NodeModule> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Module load timeout: ${filePath}`));
+      }, timeoutMs);
+
+      try {
+        const resolvedPath = require.resolve(filePath);
+        delete require.cache[resolvedPath];
+        const module = require(filePath);
+        clearTimeout(timeoutId);
+        resolve(module);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        reject(error);
+      }
+    });
   }
 }
