@@ -7,7 +7,7 @@ import { NodeExtractor } from './extractors/node-extractor';
  */
 export async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0) {
     console.log(`
 Usage: pnpm dev <package-name> [options]
@@ -30,7 +30,7 @@ as n8n's /types/nodes.json endpoint.
   const packageName = args[0];
   let verbose = false;
   let outputDir = process.cwd();
-  
+
   // Parse options
   args.slice(1).forEach(arg => {
     if (arg === '--verbose') {
@@ -39,20 +39,19 @@ as n8n's /types/nodes.json endpoint.
       outputDir = arg.split('=')[1];
     }
   });
-  
+
   const extractor = new NodeExtractor({ verbose, outputDir });
-  
+
   try {
     await extractor.extract(packageName);
     extractor.printSummary();
-    
+
     // Save complete format
     const filename = `${packageName.replace(/[@\/]/g, '-')}.json`;
     await extractor.saveResults(filename, 'node-descriptions');
-    
+
     console.log('\n🎉 Extraction finished!');
     console.log(`📄 File saved: ${filename}`);
-    
   } catch (error: any) {
     console.error('❌ Extraction failed:', error.message);
     process.exit(1);

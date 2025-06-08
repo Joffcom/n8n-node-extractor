@@ -39,7 +39,7 @@ export abstract class BaseExtractor<T> {
       format,
       nodes: this.extractedItems as any,
     };
-    
+
     const filePath = path.join(this.outputDir, filename);
     await fs.writeFile(filePath, JSON.stringify(data, null, 2));
     console.log(`💾 Saved descriptions to ${filePath}`);
