@@ -26,7 +26,7 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
     // Install
-    execSync('npm install --no-save --production --silent', {
+    execSync('npm install --no-save --silent', {
       cwd: packagePath,
       stdio: 'pipe',
     });
