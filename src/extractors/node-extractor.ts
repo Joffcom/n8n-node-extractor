@@ -181,13 +181,16 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
             delete completeDescription.iconUrl;
           }
         }
-
+        
         if (iconInfo.iconUrl) {
           completeDescription.iconUrl = iconInfo.iconUrl;
-          // If we're using iconUrl, remove any non-FA icon
-          if (!completeDescription.icon?.startsWith('fa:')) {
-            delete completeDescription.icon;
-          }
+        }
+        
+        if (iconInfo.iconLightUrl) {
+          completeDescription.iconUrl = iconInfo.iconLightUrl;
+        }
+        if (iconInfo.iconDarkUrl) {
+          completeDescription.iconUrl = iconInfo.iconDarkUrl;
         }
 
         return completeDescription;
@@ -251,25 +254,44 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
     description: any,
     packageName: string,
     filePath: string
-  ): { icon?: string; iconUrl?: string } {
-    const result: { icon?: string; iconUrl?: string } = {};
-
+  ): { icon?: string; iconUrl?: string; iconLightUrl?: string; iconDarkUrl?: string } {
+    const result: { icon?: string; iconUrl?: string; iconLightUrl?: string; iconDarkUrl?: string } = {};
+  
     if (description.icon) {
-      if (description.icon.startsWith('fa:')) {
-        result.icon = description.icon;
-      } else {
-        const iconPath = description.icon.startsWith('file:')
-          ? description.icon.replace('file:', '')
-          : description.icon;
-
-        result.iconUrl = this.generateIconUrl(iconPath, packageName, filePath);
+      if (typeof description.icon === 'string') {
+        if (description.icon.startsWith('fa:')) {
+          result.icon = description.icon;
+        } else {
+          const iconPath = description.icon.startsWith('file:')
+            ? description.icon.replace('file:', '')
+            : description.icon;
+          result.iconUrl = this.generateIconUrl(iconPath, packageName, filePath);
+        }
+      } else if (typeof description.icon === 'object' && (description.icon.light || description.icon.dark)) {
+        if (description.icon.light) {
+          const iconLightPath = description.icon.light.startsWith('file:')
+            ? description.icon.light.replace('file:', '')
+            : description.icon.light;
+          result.iconLightUrl = this.generateIconUrl(iconLightPath, packageName, filePath);
+        }
+        if (description.icon.dark) {
+          const iconDarkPath = description.icon.dark.startsWith('file:')
+            ? description.icon.dark.replace('file:', '')
+            : description.icon.dark;
+          result.iconDarkUrl = this.generateIconUrl(iconDarkPath, packageName, filePath);
+          // If both light and dark are present, prefer dark for iconUrl
+          result.iconUrl = result.iconDarkUrl;
+        } else if (result.iconLightUrl) {
+          // If only light is present, use it for iconUrl
+          result.iconUrl = result.iconLightUrl;
+        }
       }
     }
-
+  
     if (description.iconUrl) {
       result.iconUrl = this.generateIconUrl(description.iconUrl, packageName, filePath);
     }
-
+  
     return result;
   }
 
@@ -281,19 +303,26 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription> {
   private generateIconUrl(iconPath: string, packageName: string, nodePath: string): string {
     const cleanPackageName = packageName.replace(/^@[^/]+\//, '');
     const nodeDir = path.dirname(nodePath);
-
+  
+    // Remove any leading "file:" prefix
+    let normalizedIconPath = iconPath.startsWith('file:') ? iconPath.replace(/^file:/, '') : iconPath;
+  
     // Resolve path based on different patterns
-    let resolvedPath = iconPath;
-
-    if (iconPath.startsWith('/')) {
+    let resolvedPath = normalizedIconPath;
+  
+    if (normalizedIconPath.startsWith('/')) {
       // Absolute path within package
-      resolvedPath = iconPath.substring(1);
-    } else if (!iconPath.includes('/') || iconPath.startsWith('./') || iconPath.startsWith('../')) {
+      resolvedPath = normalizedIconPath.substring(1);
+    } else if (
+      !normalizedIconPath.includes('/') ||
+      normalizedIconPath.startsWith('./') ||
+      normalizedIconPath.startsWith('../')
+    ) {
       // Relative path or just filename
-      const absolutePath = path.resolve(nodeDir, iconPath);
+      const absolutePath = path.resolve(nodeDir, normalizedIconPath);
       resolvedPath = path.relative(this.packagePath, absolutePath).replace(/\\/g, '/');
     }
-
+  
     return `icons/${cleanPackageName}/${resolvedPath}`;
   }
 
