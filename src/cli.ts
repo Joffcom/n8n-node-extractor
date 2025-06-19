@@ -47,7 +47,7 @@ as n8n's /types/nodes.json endpoint.
     extractor.printSummary();
 
     // Save complete format
-    const filename = `${packageName.replace(/[@\/]/g, '-')}.json`;
+    const filename = `${packageName.replace(/[@\/]/g, '')}.json`;
     await extractor.saveResults(filename, 'node-descriptions');
 
     console.log('\n🎉 Extraction finished!');
