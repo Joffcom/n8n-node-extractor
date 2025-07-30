@@ -41,7 +41,7 @@ jobs:
       - name: Find generated JSON file
         id: find_json
         run: |
-          FILE=$(ls -1 *.json | grep -v '^package.json$' | head -n 1)
+          FILE=$(ls -1 *.json | grep -v '^package.json$' | grep -v '^tsconfig.json$' | head -n 1)
           echo "file=$FILE" >> $GITHUB_OUTPUT
 
       - name: Send JSON to webhook
