@@ -43,6 +43,7 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
 export async function getDeclaredNodes(packagePath: string): Promise<string[]> {
   try {
     const packageJsonPath = path.join(packagePath, 'package.json');
+    console.log(`[${packagePath}] 🔍 Reading package.json: ${packageJsonPath}`);
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
 
     if (packageJson.n8n?.nodes) {
@@ -53,4 +54,13 @@ export async function getDeclaredNodes(packagePath: string): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+export function parsePackageName(packageName: string): { name: string; version: string } {
+  const match = packageName.match(/(@?.+)@(.+)/);
+  if (match) {
+    const [, name, version] = match;
+    return { name, version };
+  }
+  return { name: packageName, version: 'latest' };
 }
