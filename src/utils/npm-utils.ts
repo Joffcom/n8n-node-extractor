@@ -8,14 +8,14 @@ import { execSync } from 'child_process';
 export async function setupN8nDependencies(packagePath: string): Promise<void> {
   try {
     console.log(`📦 Setting up n8n dependencies...`);
-    
+
     const packageJsonPath = path.join(packagePath, 'package.json');
     let packageJson: any = {};
-    
+
     try {
       packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
     } catch {
-      packageJson = { name: "temp", version: "1.0.0" };
+      packageJson = { name: 'temp', version: '1.0.0' };
     }
     
     // Add n8n dependencies (move peerDependencies to dependencies for installation)
@@ -44,7 +44,7 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
       cwd: packagePath,
       stdio: 'inherit'
     });
-    
+
     console.log(`✅ Dependencies ready`);
     
   } catch (error: any) {
@@ -67,11 +67,11 @@ export async function getDeclaredNodes(packagePath: string): Promise<string[]> {
   try {
     const packageJsonPath = path.join(packagePath, 'package.json');
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-    
+
     if (packageJson.n8n?.nodes) {
       return packageJson.n8n.nodes;
     }
-    
+
     return [];
   } catch {
     return [];

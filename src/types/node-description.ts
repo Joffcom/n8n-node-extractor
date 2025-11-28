@@ -76,9 +76,9 @@ export interface ExtractorConfig {
   verbose?: boolean;
 }
 
-export interface ExtractionResult {
+export interface ExtractionResult<T = CompleteNodeDescription> {
   extractedAt: string;
   totalNodes: number;
   format: string;
-  nodes: CompleteNodeDescription[];
+  nodes: T[];
 }
