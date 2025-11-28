@@ -1,6 +1,6 @@
 {
   "name": "n8n-node-extractor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tool to extract node metadata from n8n packages without installing them",
   "main": "dist/index.js",
   "scripts": {

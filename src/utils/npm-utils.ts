@@ -18,23 +18,45 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
       packageJson = { name: "temp", version: "1.0.0" };
     }
     
-    // Add n8n dependencies
+    // Add n8n dependencies (move peerDependencies to dependencies for installation)
     if (!packageJson.dependencies) packageJson.dependencies = {};
-    packageJson.dependencies['n8n-workflow'] = 'latest';
-    packageJson.dependencies['n8n-core'] = 'latest';
-    
+
+    // Copy peerDependencies to dependencies
+    if (packageJson.peerDependencies) {
+      Object.assign(packageJson.dependencies, packageJson.peerDependencies);
+    }
+
+    // Ensure core n8n packages are present
+    if (!packageJson.dependencies['n8n-workflow']) {
+      packageJson.dependencies['n8n-workflow'] = 'latest';
+    }
+    if (!packageJson.dependencies['n8n-core']) {
+      packageJson.dependencies['n8n-core'] = 'latest';
+    }
+
+    // Remove devDependencies to avoid installing them in production mode
+    delete packageJson.devDependencies;
+
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
-    
+
     // Install
-    execSync('npm install --no-save --production --silent', { 
+    execSync('npm install --no-save --omit=dev', {
       cwd: packagePath,
-      stdio: 'pipe'
+      stdio: 'inherit'
     });
     
     console.log(`✅ Dependencies ready`);
     
-  } catch (error) {
-    console.warn(`⚠️  Could not setup dependencies:`, error);
+  } catch (error: any) {
+    console.warn(`⚠️  Could not setup dependencies:`, error.message);
+    // Try to get more details about the npm error
+    if (error.stderr) {
+      console.warn('npm stderr:', error.stderr.toString());
+    }
+    if (error.stdout) {
+      console.warn('npm stdout:', error.stdout.toString());
+    }
+    throw error; // Re-throw to stop execution
   }
 }
 
