@@ -27,10 +27,8 @@ export class MultipleNodeExtractor extends BaseExtractor<
     );
 
     try {
-      // Create temp directory
       await fs.mkdir(this.tempDir, { recursive: true });
 
-      // Create a single project with all packages
       const projectPath = path.join(this.tempDir, 'project');
       await fs.mkdir(projectPath, { recursive: true });
 
@@ -101,14 +99,11 @@ export class MultipleNodeExtractor extends BaseExtractor<
     packagePath: string,
     projectPath: string
   ): Promise<CompleteNodeDescription[]> {
-    // Get declared nodes from package.json
     const declaredNodes = await getDeclaredNodes(packagePath);
     this.log(`[${packageName}] 🔍 Found ${JSON.stringify(declaredNodes)}`);
-    // Process nodes in parallel using Promise.all
     const nodePromises = declaredNodes.map(async nodePath => {
       this.log(`[${packageName}] 🔍 Processing: ${nodePath}`);
 
-      // Generate path variations
       const variations = [
         nodePath,
         nodePath.replace('.ts', '.js'),
@@ -116,7 +111,6 @@ export class MultipleNodeExtractor extends BaseExtractor<
         nodePath.replace('src/', 'lib/'),
       ];
 
-      // Check all variations in parallel
       const checkResults = await Promise.all(
         variations.map(async variation => {
           const fullPath = path.resolve(packagePath, variation);
@@ -130,7 +124,6 @@ export class MultipleNodeExtractor extends BaseExtractor<
         })
       );
 
-      // Find the first valid path
       const validPath = checkResults.find(result => result.exists);
       this.log(`[${packageName}] 🔍 Valid path: ${validPath?.path}`);
       if (validPath) {
@@ -150,7 +143,6 @@ export class MultipleNodeExtractor extends BaseExtractor<
       return null;
     });
 
-    // Filter out null results
     const nodes = (await Promise.all(nodePromises)).filter(
       node => node !== null
     ) as CompleteNodeDescription[];

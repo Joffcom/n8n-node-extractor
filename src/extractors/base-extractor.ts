@@ -7,7 +7,6 @@ import {
   ExtractionResult,
 } from '../types/node-description';
 
-// Type definitions for better type safety
 interface NodeModule {
   default?: any;
   [key: string]: any;
