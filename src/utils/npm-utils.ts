@@ -54,3 +54,12 @@ export async function getDeclaredNodes(packagePath: string): Promise<string[]> {
     return [];
   }
 }
+
+export function parsePackageName(packageName: string): { name: string; version: string } {
+  const match = packageName.match(/(@?.+)@(.+)/);
+  if (match) {
+    const [, name, version] = match;
+    return { name, version };
+  }
+  return { name: packageName, version: 'latest' };
+}

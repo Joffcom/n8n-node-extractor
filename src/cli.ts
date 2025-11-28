@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { NodeExtractor } from './extractors/node-extractor';
+import { MultipleNodeExtractor } from './extractors/multiple-node-extractor';
+import * as fs from 'fs/promises';
 
 /**
  * CLI interface
@@ -11,11 +13,14 @@ export async function main() {
   if (args.length === 0) {
     console.log(`
 Usage: pnpm dev <package-name> [options]
+       pnpm dev <package1,package2,...> [options]
 
 Examples:
   pnpm dev n8n-nodes-badges
   pnpm dev n8n-nodes-digital-ocean
   pnpm dev @n8n-community/n8n-nodes-supabase
+  pnpm dev n8n-nodes-tavily,n8n-nodes-badges
+  pnpm dev @n8n-community/n8n-nodes-supabase,n8n-nodes-digital-ocean
 
 Options:
   --verbose      Show detailed logs
@@ -23,11 +28,14 @@ Options:
 
 This will extract the node descriptions in the same format
 as n8n's /types/nodes.json endpoint.
+
+For multiple packages, the output will be a key-value JSON
+where keys are package names.
     `);
     process.exit(1);
   }
 
-  const packageName = args[0];
+  const packageArg = args[0];
   let verbose = false;
   let outputDir = process.cwd();
 
@@ -40,18 +48,53 @@ as n8n's /types/nodes.json endpoint.
     }
   });
 
-  const extractor = new NodeExtractor({ verbose, outputDir });
+  let packageNames: string[] = [];
+  const isFile = packageArg.endsWith('.json');
+  if (isFile) {
+    const data = JSON.parse(await fs.readFile(packageArg, 'utf8'));
+    packageNames = data;
+  } else {
+    packageNames = packageArg
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+  }
+
+  if (packageNames.length === 0) {
+    console.error('❌ No valid package names provided');
+    process.exit(1);
+  }
 
   try {
-    await extractor.extract(packageName);
-    extractor.printSummary();
+    if (packageNames.length === 1) {
+      // Single package - use original extractor
+      const packageName = packageNames[0];
+      const extractor = new NodeExtractor({ verbose, outputDir });
 
-    // Save complete format
-    const filename = `${packageName.replace(/[@\/]/g, '')}.json`;
-    await extractor.saveResults(filename, 'node-descriptions');
+      await extractor.extract(packageName);
+      extractor.printSummary();
 
-    console.log('\n🎉 Extraction finished!');
-    console.log(`📄 File saved: ${filename}`);
+      // Save complete format
+      const filename = `${packageName.replace(/[@\/]/g, '')}.json`;
+      await extractor.saveResults(filename, 'node-descriptions');
+
+      console.log('\n🎉 Extraction finished!');
+      console.log(`📄 File saved: ${filename}`);
+    } else {
+      // Multiple packages - use multiple extractor
+      const extractor = new MultipleNodeExtractor({ verbose, outputDir });
+
+      await extractor.extract(packageNames);
+      extractor.printSummary();
+
+      // Save in key-value format
+      const filename = `multiple-packages.json`;
+      await extractor.saveResults(filename);
+
+      console.log('\n🎉 Extraction finished!');
+      console.log(`📄 File saved: ${filename}`);
+      console.log(`📦 Processed ${packageNames.length} packages`);
+    }
   } catch (error: any) {
     console.error('❌ Extraction failed:', error.message);
     process.exit(1);
