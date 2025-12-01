@@ -1,4 +1,5 @@
 export { NodeExtractor } from './extractors/node-extractor';
+export { MultipleNodeExtractor } from './extractors/multiple-node-extractor';
 export { CompleteNodeDescription } from './types/node-description';
 export { main } from './cli';
 

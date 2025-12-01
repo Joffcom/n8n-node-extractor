@@ -26,9 +26,9 @@ export async function downloadFile(url: string, destination: string): Promise<vo
 /**
  * Get package info from npm registry
  */
-export async function getPackageInfo(packageName: string): Promise<PackageInfo> {
+export async function getPackageInfo(packageName: string, version?: string): Promise<PackageInfo> {
   const response = await fetch(
-    `https://registry.npmjs.org/${encodeURIComponent(packageName)}/latest`
+    `https://registry.npmjs.org/${encodeURIComponent(packageName)}/${version || 'latest'}`
   );
   if (!response.ok) {
     throw new Error(`Package not found: ${packageName} (${response.status})`);
@@ -41,9 +41,10 @@ export async function getPackageInfo(packageName: string): Promise<PackageInfo> 
  */
 export async function downloadAndExtractPackage(
   packageName: string,
-  tempDir: string
+  tempDir: string,
+  version?: string
 ): Promise<string> {
-  const packageInfo = await getPackageInfo(packageName);
+  const packageInfo = await getPackageInfo(packageName, version);
   console.log(`📋 Package version: ${packageInfo.version}`);
 
   const downloadPath = path.join(tempDir, 'package.tgz');
