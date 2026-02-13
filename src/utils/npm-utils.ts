@@ -39,8 +39,8 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
 
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-    // Install
-    execSync('npm install --no-save --omit=dev', {
+    // Install (ignore scripts to avoid husky and other prepare/postinstall hooks)
+    execSync('npm install --no-save --omit=dev --ignore-scripts', {
       cwd: packagePath,
       stdio: 'inherit'
     });
