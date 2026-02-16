@@ -48,7 +48,6 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription[], stri
    * Find nodes in the package
    */
   private async findNodes(packageName: string): Promise<CompleteNodeDescription[]> {
-    // Get declared nodes and optional aiNodeSdkVersion from package.json
     const declaredNodes = await getDeclaredNodes(this.packagePath);
     const aiNodeSdkVersion = await getAiNodeSdkVersion(this.packagePath);
 

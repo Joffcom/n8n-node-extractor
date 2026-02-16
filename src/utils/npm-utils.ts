@@ -86,7 +86,12 @@ export async function getAiNodeSdkVersion(packagePath: string): Promise<number |
     const packageJsonPath = path.join(packagePath, 'package.json');
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
 
-    return packageJson.n8n?.aiNodeSdkVersion;
+    const version = packageJson.n8n?.aiNodeSdkVersion;
+    if (typeof version === 'number' && Number.isInteger(version) && version > 0) {
+      return version;
+    }
+
+    return undefined;
   } catch {
     return undefined;
   }
