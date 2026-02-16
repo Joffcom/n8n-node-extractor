@@ -78,6 +78,20 @@ export async function getDeclaredNodes(packagePath: string): Promise<string[]> {
   }
 }
 
+/**
+ * Get optional aiNodeSdkVersion from package.json n8n config
+ */
+export async function getAiNodeSdkVersion(packagePath: string): Promise<number | undefined> {
+  try {
+    const packageJsonPath = path.join(packagePath, 'package.json');
+    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+
+    return packageJson.n8n?.aiNodeSdkVersion;
+  } catch {
+    return undefined;
+  }
+}
+
 export function parsePackageName(packageName: string): { name: string; version: string } {
   const match = packageName.match(/(@?.+)@(.+)/);
   if (match) {

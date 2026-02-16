@@ -3,7 +3,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { BaseExtractor } from './base-extractor';
 import { CompleteNodeDescription, ExtractorConfig } from '../types/node-description';
-import { getDeclaredNodes, parsePackageName } from '../utils/npm-utils';
+import { getAiNodeSdkVersion, getDeclaredNodes, parsePackageName } from '../utils/npm-utils';
 
 export class MultipleNodeExtractor extends BaseExtractor<
   Record<string, CompleteNodeDescription[]>,
@@ -100,6 +100,7 @@ export class MultipleNodeExtractor extends BaseExtractor<
     projectPath: string
   ): Promise<CompleteNodeDescription[]> {
     const declaredNodes = await getDeclaredNodes(packagePath);
+    const aiNodeSdkVersion = await getAiNodeSdkVersion(packagePath);
     this.log(`[${packageName}] 🔍 Found ${JSON.stringify(declaredNodes)}`);
     const nodePromises = declaredNodes.map(async nodePath => {
       this.log(`[${packageName}] 🔍 Processing: ${nodePath}`);
@@ -135,6 +136,9 @@ export class MultipleNodeExtractor extends BaseExtractor<
           projectNodeModules
         );
         if (node) {
+          if (aiNodeSdkVersion !== undefined) {
+            node.aiNodeSdkVersion = aiNodeSdkVersion;
+          }
           return node;
         }
       }

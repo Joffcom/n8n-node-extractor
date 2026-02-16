@@ -47,6 +47,7 @@ export interface CompleteNodeDescription {
   }>;
   polling?: boolean;
   subtitle?: string;
+  aiNodeSdkVersion?: number;
   __loadOptionsMethods?: string[];
   codex?: {
     categories?: string[];
