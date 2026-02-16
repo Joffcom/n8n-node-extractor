@@ -3,7 +3,7 @@ import * as path from 'path';
 import { BaseExtractor } from './base-extractor';
 import { CompleteNodeDescription, ExtractorConfig } from '../types/node-description';
 import { downloadAndExtractPackage } from '../utils/download-utils';
-import { getAiNodeSdkVersion, getDeclaredNodes, parsePackageName, setupN8nDependencies } from '../utils/npm-utils';
+import { getN8nPackageConfig, parsePackageName, setupN8nDependencies } from '../utils/npm-utils';
 
 export class NodeExtractor extends BaseExtractor<CompleteNodeDescription[], string> {
   private packagePath: string = '';
@@ -48,8 +48,7 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription[], stri
    * Find nodes in the package
    */
   private async findNodes(packageName: string): Promise<CompleteNodeDescription[]> {
-    const declaredNodes = await getDeclaredNodes(this.packagePath);
-    const aiNodeSdkVersion = await getAiNodeSdkVersion(this.packagePath);
+    const { nodes: declaredNodes, aiNodeSdkVersion } = await getN8nPackageConfig(this.packagePath);
 
     // Process nodes in parallel using Promise.all
     const nodePromises = declaredNodes.map(async nodePath => {

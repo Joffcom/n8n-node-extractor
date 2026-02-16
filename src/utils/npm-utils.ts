@@ -60,40 +60,32 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
   }
 }
 
-/**
- * Get declared nodes from package.json
- */
-export async function getDeclaredNodes(packagePath: string): Promise<string[]> {
-  try {
-    const packageJsonPath = path.join(packagePath, 'package.json');
-    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-
-    if (packageJson.n8n?.nodes) {
-      return packageJson.n8n.nodes;
-    }
-
-    return [];
-  } catch {
-    return [];
-  }
+export interface N8nPackageConfig {
+  nodes: string[];
+  aiNodeSdkVersion?: number;
 }
 
 /**
- * Get optional aiNodeSdkVersion from package.json n8n config
+ * Get n8n config from package.json (declared nodes and optional aiNodeSdkVersion)
  */
-export async function getAiNodeSdkVersion(packagePath: string): Promise<number | undefined> {
+export async function getN8nPackageConfig(packagePath: string): Promise<N8nPackageConfig> {
   try {
     const packageJsonPath = path.join(packagePath, 'package.json');
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+    const n8n = packageJson.n8n;
 
-    const version = packageJson.n8n?.aiNodeSdkVersion;
+    const config: N8nPackageConfig = {
+      nodes: n8n?.nodes ?? [],
+    };
+
+    const version = n8n?.aiNodeSdkVersion;
     if (typeof version === 'number' && Number.isInteger(version) && version > 0) {
-      return version;
+      config.aiNodeSdkVersion = version;
     }
 
-    return undefined;
+    return config;
   } catch {
-    return undefined;
+    return { nodes: [] };
   }
 }
 
