@@ -60,21 +60,32 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
   }
 }
 
+export interface N8nPackageConfig {
+  nodes: string[];
+  aiNodeSdkVersion?: number;
+}
+
 /**
- * Get declared nodes from package.json
+ * Get n8n config from package.json (declared nodes and optional aiNodeSdkVersion)
  */
-export async function getDeclaredNodes(packagePath: string): Promise<string[]> {
+export async function getN8nPackageConfig(packagePath: string): Promise<N8nPackageConfig> {
   try {
     const packageJsonPath = path.join(packagePath, 'package.json');
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+    const n8n = packageJson.n8n;
 
-    if (packageJson.n8n?.nodes) {
-      return packageJson.n8n.nodes;
+    const config: N8nPackageConfig = {
+      nodes: n8n?.nodes ?? [],
+    };
+
+    const version = n8n?.aiNodeSdkVersion;
+    if (typeof version === 'number' && Number.isInteger(version) && version > 0) {
+      config.aiNodeSdkVersion = version;
     }
 
-    return [];
+    return config;
   } catch {
-    return [];
+    return { nodes: [] };
   }
 }
 
