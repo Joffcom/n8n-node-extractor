@@ -353,9 +353,13 @@ export abstract class BaseExtractor<TItems, TConfig> {
         module.paths.splice(0, module.paths.length, ...originalPaths);
       }
     } catch (error) {
-      this.log(
+      // Always log extraction errors (not just in verbose mode) for debugging
+      console.error(
         `❌ Extraction error for ${path.basename(filePath)}: ${error instanceof Error ? error.message : String(error)}`
       );
+      if (this.verbose && error instanceof Error && error.stack) {
+        console.error('Stack trace:', error.stack);
+      }
       return null;
     }
   }

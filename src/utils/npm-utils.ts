@@ -17,7 +17,7 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
     } catch {
       packageJson = { name: 'temp', version: '1.0.0' };
     }
-    
+
     // Add n8n dependencies (move peerDependencies to dependencies for installation)
     if (!packageJson.dependencies) packageJson.dependencies = {};
 
@@ -37,16 +37,19 @@ export async function setupN8nDependencies(packagePath: string): Promise<void> {
     // Remove devDependencies to avoid installing them in production mode
     delete packageJson.devDependencies;
 
+    // Remove lifecycle scripts from the root package to prevent issues like
+    // husky hooks failing, while still allowing native addons in dependencies
+    // (e.g. isolated-vm) to compile their binaries via their own install scripts
+    delete packageJson.scripts;
+
     await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-    // Install (ignore scripts to avoid husky and other prepare/postinstall hooks)
-    execSync('npm install --no-save --omit=dev --ignore-scripts', {
+    execSync('npm install --no-save --omit=dev', {
       cwd: packagePath,
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
     console.log(`✅ Dependencies ready`);
-    
   } catch (error: any) {
     console.warn(`⚠️  Could not setup dependencies:`, error.message);
     // Try to get more details about the npm error
