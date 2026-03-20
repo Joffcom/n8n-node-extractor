@@ -47,6 +47,48 @@ jobs:
       - name: Send JSON to webhook
         if: steps.find_json.outputs.file != ''
         run: |
+          FILE="${{ steps.find_json.outputs.file }}"
+          URL="${{ github.event.inputs.resumeUrl }}"
+          MAX_ATTEMPTS=5
+          ATTEMPT=0
+          SUCCESS=false
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT of $MAX_ATTEMPTS..."
+
+            HTTP_STATUS=$(curl -X POST -H "Content-Type: application/json" \
+              --data-binary "@$FILE" \
+              --max-time 30 \
+              --silent \
+              --output /dev/null \
+              --write-out "%{http_code}" \
+              "$URL" || echo "000")
+
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+              echo "Success (HTTP $HTTP_STATUS)"
+              SUCCESS=true
+              break
+            else
+              echo "Failed (HTTP $HTTP_STATUS)"
+              if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+                echo "Retrying in 1 second..."
+                sleep 1
+              fi
+            fi
+          done
+
+          if [ "$SUCCESS" != "true" ]; then
+            echo "All $MAX_ATTEMPTS attempts failed"
+            exit 1
+          fi
+
+      - name: Send error to webhook
+        if: failure()
+        run: |
+          URL="${{ github.event.inputs.resumeUrl }}"
           curl -X POST -H "Content-Type: application/json" \
-            --data-binary "@${{ steps.find_json.outputs.file }}" \
-            "${{ github.event.inputs.resumeUrl }}"
+            --max-time 30 \
+            --silent \
+            --data "{\"error\": true, \"message\": \"Node extraction failed for package: ${{ github.event.inputs.package_name }}\", \"run_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            "$URL" || true
