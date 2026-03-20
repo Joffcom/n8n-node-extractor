@@ -1,0 +1,23 @@
+.github/workflows/node-extraction.yml
+  aa66c0549f6da31b 50-89,91-94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "438b55d817038bafb88386621ad2189d967b068d",
+  "prompts": {
+    "aa66c0549f6da31b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbd0c283-6efe-4a5c-96e8-33f7bdd836ab",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Jonathan Bennetts <jonathan.bennetts@gmail.com>",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 2,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}
