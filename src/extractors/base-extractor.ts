@@ -116,13 +116,30 @@ export abstract class BaseExtractor<TItems, TConfig> {
    * Resolve node class from module exports
    */
   protected resolveNodeClass(nodeModule: any): any {
-    if (nodeModule.default && typeof nodeModule.default === 'function') {
+    // A node file can export helper functions alongside the node class, so a
+    // candidate only counts if instantiating it yields a node description
+    const isNodeClass = (key: string, value: unknown): boolean => {
+      if (typeof value !== 'function') {
+        return false;
+      }
+      try {
+        const instance = new (value as new () => NodeInstance)();
+        return Boolean(instance?.description?.name);
+      } catch (error) {
+        this.log(
+          `Skipping export "${key}": ${error instanceof Error ? error.message : String(error)}`
+        );
+        return false;
+      }
+    };
+
+    if (isNodeClass('default', nodeModule.default)) {
       return nodeModule.default;
     }
 
     // Try any function export
     for (const [key, value] of Object.entries(nodeModule)) {
-      if (typeof value === 'function' && key !== 'default') {
+      if (key !== 'default' && isNodeClass(key, value)) {
         return value;
       }
     }
