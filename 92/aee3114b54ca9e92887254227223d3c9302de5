@@ -1,0 +1,19 @@
+src/extractors/base-extractor.ts
+  s_5113d0f25bdbef::t_018fdd86f7312f 119-136,142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "92aee3114b54ca9e92887254227223d3c9302de5",
+  "prompts": {},
+  "sessions": {
+    "s_5113d0f25bdbef": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3ea09cce-21eb-40f3-888a-6c072668d8e0",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jonathan <jon@n8n.io>"
+    }
+  }
+}
