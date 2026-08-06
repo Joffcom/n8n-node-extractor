@@ -1,0 +1,20 @@
+src/extractors/base-extractor.ts
+  s_a285ab474a5874::t_2f5d4d2c25a4e3 207-233
+  s_a285ab474a5874::t_e13587b62e7cfb 256-260
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "763753fdf71529a6502f3d5f760e3d742bf54cae",
+  "prompts": {},
+  "sessions": {
+    "s_a285ab474a5874": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2d75de38-789e-4724-97bd-93533c84c05b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jonathan <jon@n8n.io>"
+    }
+  }
+}
