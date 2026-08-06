@@ -204,12 +204,33 @@ export abstract class BaseExtractor<TItems, TConfig> {
     }
 
     if (description.iconUrl) {
-      result.iconUrl = this.generateIconUrl(
-        description.iconUrl,
-        packageName,
-        filePath,
-        packagePath
-      );
+      if (typeof description.iconUrl === 'string') {
+        result.iconUrl = this.generateIconUrl(
+          description.iconUrl,
+          packageName,
+          filePath,
+          packagePath
+        );
+      } else if (typeof description.iconUrl === 'object') {
+        if (description.iconUrl.light) {
+          result.iconLightUrl = this.generateIconUrl(
+            description.iconUrl.light,
+            packageName,
+            filePath,
+            packagePath
+          );
+        }
+        if (description.iconUrl.dark) {
+          result.iconDarkUrl = this.generateIconUrl(
+            description.iconUrl.dark,
+            packageName,
+            filePath,
+            packagePath
+          );
+        }
+        // Prefer dark when both are present, matching the `icon` handling above
+        result.iconUrl = result.iconDarkUrl || result.iconLightUrl;
+      }
     }
 
     return result;
@@ -232,6 +253,11 @@ export abstract class BaseExtractor<TItems, TConfig> {
     nodePath: string,
     packagePath: string
   ): string {
+    // Remote icons are already usable as-is
+    if (/^https?:\/\//.test(iconPath)) {
+      return iconPath;
+    }
+
     const cleanPackageName = packageName.replace(/^@[^/]+\//, '');
     const nodeDir = path.dirname(nodePath);
 
