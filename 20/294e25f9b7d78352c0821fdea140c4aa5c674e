@@ -1,0 +1,31 @@
+src/extractors/multiple-node-extractor.ts
+  s_a285ab474a5874::t_ee08a65c5acefd 145-149
+src/extractors/node-extractor.ts
+  s_a285ab474a5874::t_3a31e4eb3e986a 97-101
+.github/workflows/node-extraction.yml
+  s_466c2d74751f52::t_5e7ff4ebd97496 19-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "20294e25f9b7d78352c0821fdea140c4aa5c674e",
+  "prompts": {},
+  "sessions": {
+    "s_466c2d74751f52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ccc5beca-8920-4dd1-9f82-4472963a4193",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jonathan <jon@n8n.io>"
+    },
+    "s_a285ab474a5874": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2d75de38-789e-4724-97bd-93533c84c05b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jonathan <jon@n8n.io>"
+    }
+  }
+}
