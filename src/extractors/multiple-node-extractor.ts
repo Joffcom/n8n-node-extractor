@@ -142,7 +142,11 @@ export class MultipleNodeExtractor extends BaseExtractor<
         }
       }
 
-      console.warn(`❌ Could not extract: ${nodePath} from ${packageName}`);
+      console.warn(
+        validPath
+          ? `❌ Could not extract: ${nodePath} from ${packageName}`
+          : `❌ Could not extract: ${nodePath} from ${packageName} (file not found in package)`
+      );
       return null;
     });
 

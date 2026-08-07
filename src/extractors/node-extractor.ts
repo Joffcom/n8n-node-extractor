@@ -94,7 +94,11 @@ export class NodeExtractor extends BaseExtractor<CompleteNodeDescription[], stri
         }
       }
 
-      console.warn(`❌ Could not extract: ${nodePath}`);
+      console.warn(
+        validPath
+          ? `❌ Could not extract: ${nodePath}`
+          : `❌ Could not extract: ${nodePath} (file not found in package)`
+      );
       return null;
     });
 
