@@ -204,7 +204,7 @@ export class MultipleNodeExtractor extends BaseExtractor<
     };
 
     const filePath = path.join(this.outputDir, filename);
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+    await fs.writeFile(filePath, JSON.stringify(data));
     console.log(`💾 Saved descriptions to ${filePath}`);
   }
 }

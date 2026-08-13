@@ -16,9 +16,6 @@ jobs:
   extract-and-send:
     runs-on: ubuntu-latest
     steps:
-      - name: Wait before starting
-        run: sleep 60
-
       - name: Checkout code
         uses: actions/checkout@v4
 

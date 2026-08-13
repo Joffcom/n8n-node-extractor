@@ -87,7 +87,7 @@ export abstract class BaseExtractor<TItems, TConfig> {
     };
 
     const filePath = path.join(this.outputDir, filename);
-    await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+    await fs.writeFile(filePath, JSON.stringify(data));
     console.log(`💾 Saved descriptions to ${filePath}`);
   }
 
