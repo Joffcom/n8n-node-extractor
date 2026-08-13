@@ -1,0 +1,21 @@
+src/extractors/base-extractor.ts
+  s_df996df2ac2e96::t_b3ef71355543f9 90
+src/extractors/multiple-node-extractor.ts
+  s_df996df2ac2e96::t_9b3b7779c2e003 207
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "bd2c4268f625a8b77ee17fdb2a75c6318222d9a1",
+  "prompts": {},
+  "sessions": {
+    "s_df996df2ac2e96": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f0b52179-e355-4776-87d7-c36c14a960f2",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jonathan <jon@n8n.io>"
+    }
+  }
+}
